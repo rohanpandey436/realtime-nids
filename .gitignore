@@ -14,3 +14,6 @@ server/alerts.log
 # OS
 Thumbs.db
 .DS_Store
+
+# local source backup (redundant with the repo)
+realtime-nids-source.zip
