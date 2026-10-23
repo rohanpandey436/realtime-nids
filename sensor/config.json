@@ -1,0 +1,10 @@
+{
+  "interface": "Wi-Fi",
+  "server": "http://localhost:3000",
+  "gateway": "192.168.29.1",
+  "gateway_mac": "",
+  "window_seconds": 5,
+  "port_scan_ports": 15,
+  "syn_flood_syns": 100,
+  "cooldown_seconds": 30
+}
