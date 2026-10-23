@@ -1,14 +1,36 @@
-# Real-Time Network Intrusion Detection System
+# Real-Time Network Intrusion Detection System (NIDS)
 
-Captures live network packets, detects port scans and shows alerts on a live web dashboard.
+A lightweight, real-time NIDS that captures live network traffic, detects three common attacks
+using transparent rules, and shows alerts on a web dashboard within about a second.
 
-## Parts
+B.Tech CSE mini project. Repository: https://github.com/rohanpandey436/realtime-nids
 
-- `sensor/nids.py`: Python program that captures packets with Scapy, counts them and checks for port scans
-- `sensor/scan_test.py`: test script that knocks on 100 ports of this laptop to trigger the alert
-- `server/server.js`: Node.js server that receives alerts, saves them in `alerts.log` and pushes them to the browser
-- `server/public/index.html`: live dashboard
-- `design/`: DFD level 0, DFD level 1, use case diagram and flowchart
+## What it detects
+
+| Attack | Rule |
+|---|---|
+| Port scan | One source contacts more than 15 distinct ports in a 5-second window |
+| SYN flood | 100+ half-open handshakes to one host with almost no completions |
+| ARP spoofing | A trusted gateway address appears with a different MAC address |
+
+No machine learning is used: every alert can be traced to a counter and a threshold.
+
+## Architecture
+
+```
+Network -> Sniffer (Python + Scapy) -> Rule engine -> HTTP POST (JSON)
+        -> Server (Node.js + Express) -> alerts.log
+        -> Socket.IO -> Live dashboard (HTML/CSS/JS + Chart.js)
+```
+
+## Project layout
+
+- `sensor/` : Python sensor (`nids.py`), config and the two test scripts
+- `server/` : Node.js server (`server.js`) and the dashboard in `public/`
+- `tests/`  : automated unit tests for the three rules
+- `design/` : DFDs, use-case, sequence, component, deployment diagrams and screenshots
+- `report/` : the mini-project report (DOCX and PDF)
+- `synopsis/` : the approved synopsis
 
 ## Requirements
 
@@ -18,13 +40,32 @@ Captures live network packets, detects port scans and shows alerts on a live web
 
 ## Run
 
-1. `cd server` then `node server.js`
-2. Open http://localhost:3000
-3. In a second terminal: `cd sensor` then `python nids.py`
-4. In a third terminal: `cd sensor` then `python scan_test.py`
+```bash
+# terminal 1
+cd server
+node server.js
 
-## Status
+# terminal 2
+cd sensor
+python nids.py
 
-Done: live capture, per-second packet counts, port scan detection, alert log, live dashboard.
+# terminal 3 (generate a test attack)
+cd sensor
+python scan_test.py      # port scan
+python flood_test.py     # SYN flood
+```
 
-Next: SYN flood detection, ARP spoofing detection, alert history on page load, testing from a second device.
+Open http://localhost:3000 to see the dashboard.
+
+## Tests
+
+```bash
+python -m unittest tests.test_rules -v
+```
+
+All ten tests should pass.
+
+## Configuration
+
+Thresholds and the interface name are in `sensor/config.json`, so they can be changed
+without editing the code.
