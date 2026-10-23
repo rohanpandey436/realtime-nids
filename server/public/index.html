@@ -1,40 +1,114 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NIDS Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 30px; background: #f4f6f8; color: #1f2937; }
-    h1 { margin: 0 0 4px 0; }
-    #status { color: #6b7280; margin-bottom: 20px; }
-    #status.on { color: #1b7f73; }
-    .row { display: flex; gap: 20px; align-items: flex-start; }
-    .stats { display: flex; gap: 20px; }
-    .stats div { background: white; padding: 20px 30px; border-radius: 8px; font-size: 18px; }
-    .stats span { display: block; font-size: 36px; font-weight: bold; color: #1f4e79; }
-    .chart { background: white; border-radius: 8px; padding: 10px; flex: 1; height: 150px; }
-    #banner { color: white; padding: 15px; font-size: 20px; border-radius: 8px; margin-bottom: 20px; }
-    .medium { background: #e08a00; }
-    .high { background: #c62828; }
-    .critical { background: #7b1fa2; }
-    table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; }
-    th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e5e7eb; }
-    th { background: #e8edf3; }
-    .pill { color: white; font-weight: bold; text-transform: capitalize; padding: 3px 12px; border-radius: 12px; font-size: 14px; }
-    .pill.medium { background: #e08a00; } .pill.high { background: #c62828; } .pill.critical { background: #7b1fa2; }
-    .totals { margin: 10px 0 20px 0; color: #4b5563; }
+    :root {
+      --bg: #f4f6f8; --card: #ffffff; --ink: #1f2937; --muted: #5b6472;
+      --line: #e5e7eb; --accent: #1f4e79; --head: #e8edf3;
+      --medium: #e08a00; --high: #c62828; --critical: #7b1fa2; --on: #1b7f73;
+      --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px;
+      --radius: 10px; --shadow: 0 1px 3px rgba(16,24,40,.06), 0 1px 2px rgba(16,24,40,.04);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0; padding: var(--s4); background: var(--bg); color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+    h1 { margin: 0 0 var(--s1) 0; font-size: 28px; letter-spacing: -.01em; }
+    h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em;
+         color: var(--muted); margin: var(--s4) 0 var(--s2) 0; }
+
+    /* status with a live dot */
+    #status { display: flex; align-items: center; gap: var(--s1);
+              color: var(--muted); font-size: 14px; margin-bottom: var(--s2); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex: none;
+           background: var(--muted); transition: background .3s ease; }
+    #status.connecting .dot {
+      background: transparent; border: 2px solid var(--line);
+      border-top-color: var(--accent); animation: spin .7s linear infinite;
+    }
+    #status.on .dot { background: var(--on); animation: pulse 2s ease-in-out infinite; }
+    #status.off .dot { background: var(--high); }
+
+    /* alert banner: collapses when empty, slides down on an alert */
+    #banner {
+      color: #fff; border-radius: var(--radius); font-size: 20px; font-weight: 600;
+      overflow: hidden; max-height: 0; opacity: 0; padding: 0 var(--s2);
+      margin-bottom: 0; transform: translateY(-6px);
+      transition: max-height .35s ease, opacity .3s ease, padding .35s ease,
+                  margin .35s ease, transform .3s ease;
+    }
+    #banner.show { max-height: 120px; opacity: 1; padding: var(--s2);
+                   margin-bottom: var(--s3); transform: translateY(0); }
+    #banner.medium { background: var(--medium); } #banner.high { background: var(--high); }
+    #banner.critical { background: var(--critical); }
+
+    .row { display: flex; gap: var(--s3); align-items: stretch; flex-wrap: wrap; }
+    .stats { display: flex; gap: var(--s2); }
+    .stats .stat { background: var(--card); padding: var(--s2) var(--s3);
+      border-radius: var(--radius); font-size: 14px; color: var(--muted);
+      box-shadow: var(--shadow); min-width: 96px;
+      transition: transform .2s ease, box-shadow .2s ease; }
+    .stats .stat:hover { transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(16,24,40,.10); }
+    .stats .num { display: block; font-size: 36px; font-weight: 700; color: var(--accent);
+      line-height: 1.1; transition: transform .18s ease; transform-origin: left center; }
+    .num.bump { transform: scale(1.14); }
+    .chart { background: var(--card); border-radius: var(--radius); padding: var(--s2);
+      flex: 1 1 320px; height: 168px; box-shadow: var(--shadow); }
+
+    .totals { margin: var(--s1) 0 var(--s2) 0; color: var(--muted); font-size: 14px; }
+    .totals b { color: var(--ink); }
+    table { width: 100%; border-collapse: collapse; background: var(--card);
+      border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    th, td { text-align: left; padding: 12px var(--s2); border-bottom: 1px solid var(--line);
+             font-size: 14px; }
+    th { background: var(--head); font-weight: 600; color: #334155;
+         text-transform: uppercase; letter-spacing: .04em; font-size: 12px; }
+    tbody tr { transition: background .15s ease; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody tr:last-child td { border-bottom: none; }
+    #empty td { color: var(--muted); font-style: italic; text-align: center; padding: var(--s3); }
+
+    .pill { display: inline-block; color: #fff; font-weight: 700; text-transform: capitalize;
+      padding: 3px 12px; border-radius: 999px; font-size: 13px; }
+    .pill.medium { background: var(--medium); } .pill.high { background: var(--high); }
+    .pill.critical { background: var(--critical); }
+
+    /* new alert row reveals and briefly highlights */
+    tr.new { animation: fadeInUp .35s ease both; }
+    tr.flash { animation: flash 1.2s ease; }
+    tr.flash .pill { animation: pop .4s ease; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(27,127,115,.45); }
+                       50% { box-shadow: 0 0 0 5px rgba(27,127,115,0); } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+    @keyframes flash { 0% { background: #fff4d6; } 100% { background: transparent; } }
+    @keyframes pop { 0% { transform: scale(.8); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
   </style>
 </head>
 <body>
   <h1>Network Intrusion Detection System</h1>
-  <div id="status">Connecting to server...</div>
-  <div id="banner" hidden></div>
+  <div id="status" class="connecting" role="status" aria-live="polite">
+    <span class="dot"></span><span id="status-text">Connecting to server...</span>
+  </div>
+  <div id="banner" role="alert" aria-live="assertive"></div>
 
   <h2>Packets per second</h2>
   <div class="row">
     <div class="stats">
-      <div>TCP <span id="TCP">0</span></div>
-      <div>UDP <span id="UDP">0</span></div>
-      <div>ARP <span id="ARP">0</span></div>
+      <div class="stat">TCP <span class="num" id="TCP">0</span></div>
+      <div class="stat">UDP <span class="num" id="UDP">0</span></div>
+      <div class="stat">ARP <span class="num" id="ARP">0</span></div>
     </div>
     <div class="chart"><canvas id="chart"></canvas></div>
   </div>
@@ -43,25 +117,45 @@
   <div class="totals">Port Scan: <b id="total-Port-Scan">0</b> &nbsp; SYN Flood: <b id="total-SYN-Flood">0</b> &nbsp; ARP Spoofing: <b id="total-ARP-Spoofing">0</b></div>
   <table>
     <thead><tr><th>Date</th><th>Time</th><th>Type</th><th>Severity</th><th>Source</th><th>Destination</th><th>Detail</th></tr></thead>
-    <tbody id="alerts"></tbody>
+    <tbody id="alerts">
+      <tr id="empty"><td colspan="7">No alerts yet. The system is watching live traffic.</td></tr>
+    </tbody>
   </table>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/chart.umd.js"></script>
   <script>
     const socket = io();
-    const status = document.getElementById("status");
-    socket.on("connect", () => { status.textContent = "Connected to server, waiting for sensor data"; status.className = "on"; });
-    socket.on("disconnect", () => { status.textContent = "Server connection lost"; status.className = ""; });
+    const statusEl = document.getElementById("status");
+    const statusText = document.getElementById("status-text");
+    socket.on("connect", () => {
+      statusText.textContent = "Connected to server, waiting for sensor data";
+      statusEl.className = "on";
+    });
+    socket.on("disconnect", () => {
+      statusText.textContent = "Server connection lost, reconnecting...";
+      statusEl.className = "off";
+    });
 
     const chart = new Chart(document.getElementById("chart"), {
       type: "line",
-      data: { labels: [], datasets: [{ label: "packets per second", data: [], borderColor: "#1f4e79", tension: 0.3, pointRadius: 0 }] },
-      options: { animation: false, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+      data: { labels: [], datasets: [{ label: "packets per second", data: [],
+        borderColor: "#1f4e79", backgroundColor: "rgba(31,78,121,.08)", fill: true,
+        tension: 0.35, pointRadius: 0, borderWidth: 2 }] },
+      options: { animation: { duration: 300 }, maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
     });
 
+    function setNum(name, value) {
+      const el = document.getElementById(name);
+      if (el.textContent !== String(value)) {
+        el.textContent = value;
+        el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
+      }
+    }
+
     socket.on("stats", data => {
-      for (const name in data) document.getElementById(name).textContent = data[name];
+      for (const name in data) setNum(name, data[name]);
       chart.data.labels.push("");
       chart.data.datasets[0].data.push(data.TCP + data.UDP + data.ARP);
       if (chart.data.labels.length > 60) { chart.data.labels.shift(); chart.data.datasets[0].data.shift(); }
@@ -69,8 +163,11 @@
     });
 
     const totals = {};
-    function addRow(alert, top) {
+    function addRow(alert, live) {
+      const empty = document.getElementById("empty");
+      if (empty) empty.remove();
       const row = document.createElement("tr");
+      if (live) row.className = "new flash";
       for (const value of [alert.date, alert.time, alert.type, alert.severity, alert.src, alert.dst, alert.detail]) {
         const cell = document.createElement("td");
         if (value === alert.severity) {
@@ -84,7 +181,7 @@
         row.appendChild(cell);
       }
       const body = document.getElementById("alerts");
-      top ? body.prepend(row) : body.appendChild(row);
+      live ? body.prepend(row) : body.appendChild(row);
       totals[alert.type] = (totals[alert.type] || 0) + 1;
       const box = document.getElementById("total-" + alert.type.replace(" ", "-"));
       if (box) box.textContent = totals[alert.type];
@@ -92,13 +189,14 @@
 
     fetch("/api/alerts").then(r => r.json()).then(list => list.reverse().forEach(a => addRow(a, false)));
 
+    let bannerTimer;
     socket.on("alert", alert => {
       addRow(alert, true);
       const banner = document.getElementById("banner");
       banner.textContent = "ALERT: " + alert.time + " " + alert.type + " from " + alert.src + " to " + alert.dst + " (" + alert.detail + ")";
-      banner.className = alert.severity;
-      banner.hidden = false;
-      setTimeout(() => banner.hidden = true, 6000);
+      banner.className = alert.severity + " show";
+      clearTimeout(bannerTimer);
+      bannerTimer = setTimeout(() => banner.classList.remove("show"), 6000);
     });
   </script>
 </body>
