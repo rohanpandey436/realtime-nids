@@ -6,7 +6,7 @@ Read sections 1 to 4 first, then practise the demo, then read the rest.
 
 The project is also saved as a report, a presentation and the source code:
 - Report: `report/NIDS_Mini_Project_Report.pdf` (57 pages)
-- Presentation: `NIDS_Final_Presentation_Rohan_Pandey.pptx` (12 slides)
+- Presentation: `NIDS_Final_Presentation_Rohan_Pandey.pptx` (10 slides)
 - Logbook: `report/Weekly_Progress_Logbook.pdf`
 - Code online: https://github.com/rohanpandey436/realtime-nids
 
